@@ -5,23 +5,19 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -54,7 +50,7 @@ public class ExchangeActivity extends Activity implements AdapterView.OnItemSele
         txtResultCurrency = findViewById(R.id.ResultCurrency);
         //get the username of user
         Intent intent = getIntent();
-        if (intent.hasExtra(Intent.EXTRA_TEXT)){
+        if (intent.hasExtra(Intent.EXTRA_TEXT)) {
             String input = intent.getStringExtra(Intent.EXTRA_TEXT);
             whoIsIn.setText("  Hello " + input);
         }
@@ -65,19 +61,19 @@ public class ExchangeActivity extends Activity implements AdapterView.OnItemSele
         spinnerTo.setAdapter(adapter);
         spinnerTo.setOnItemSelectedListener(this);
         spinnerFrom.setOnItemSelectedListener(this);
-        if(this.getResources().getConfiguration().locale.getCountry() == "IL"){
+        if (this.getResources().getConfiguration().locale.getCountry() == "IL") {
             spinnerTo.setSelection(1);
         }
     }
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        if (parent.getId() == R.id.spinnerFrom){
+        if (parent.getId() == R.id.spinnerFrom) {
             String From = parent.getItemAtPosition(position).toString();
             currencyFrom = From;
         }
 
-        if (parent.getId() == R.id.spinnerTo){
+        if (parent.getId() == R.id.spinnerTo) {
             String To = parent.getItemAtPosition(position).toString();
             currencyTo = To;
         }
@@ -93,20 +89,21 @@ public class ExchangeActivity extends Activity implements AdapterView.OnItemSele
     public void btnHttpRequest(View view) {
         //checking if txt amount only numeric
         String amountAsString = txtAmount.getText().toString();
-        if (amountAsString.isEmpty() || amountAsString == null){
+        if (amountAsString.isEmpty() || amountAsString == null) {
             errorMsg.setText("please enter number");
-        } else  {
+        } else {
             errorMsg.setText("");
+            hideKeyboard(this);
             //making the exchanging
             amount = Double.valueOf(amountAsString);
-            new AsyncTask<Void, Void, Double>(){
+            new AsyncTask<Void, Void, Double>() {
 
                 @Override
                 protected Double doInBackground(Void... voids) {
                     URL url = null;
                     InputStream inputStream = null;
                     HttpURLConnection connection = null;
-                    try{
+                    try {
                         url = new URL(BASE_URL + "?currencyFrom=" + currencyFrom + "&currencyTo=" + currencyTo + "&amount=" + amount);
                         connection = (HttpURLConnection) url.openConnection();
                         connection.setDoOutput(false);
@@ -117,11 +114,11 @@ public class ExchangeActivity extends Activity implements AdapterView.OnItemSele
                         StringBuilder stringBuilder = new StringBuilder();
                         int actuallyRead;
                         byte[] buffer = new byte[1024];
-                        while ((actuallyRead = inputStream.read(buffer)) != -1){
+                        while ((actuallyRead = inputStream.read(buffer)) != -1) {
                             stringBuilder.append(new String(buffer, 0, actuallyRead));
                         }
                         String response = stringBuilder.toString();
-                        try{
+                        try {
                             JSONObject jsonExchangeResult = new JSONObject(response);
                             result = jsonExchangeResult.getDouble("exchangeResult");
                             return result;
@@ -149,7 +146,7 @@ public class ExchangeActivity extends Activity implements AdapterView.OnItemSele
 
                 @Override
                 protected void onPostExecute(Double aDouble) {
-                    if (aDouble != null){
+                    if (aDouble != null) {
                         txtResultAmount.setText(String.valueOf(aDouble));
                         txtResultCurrency.setText(currencyTo);
                     }
@@ -162,5 +159,16 @@ public class ExchangeActivity extends Activity implements AdapterView.OnItemSele
 
     public void btnLogOut(View view) {
         finish();
+    }
+
+    public static void hideKeyboard(Activity activity) {
+        InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = activity.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(activity);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 }
